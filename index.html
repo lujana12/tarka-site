@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#182f28" />
+  <title>Tarka Site — Ward 16 Heritage Adventure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <a class="brand" href="#adventure" aria-label="Tarka home"><span class="brand-mark">त</span><span><strong>TARKA</strong><small>WARD 16 · HERITAGE TRAILS</small></span></a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-link active" data-view="adventure">Adventure</button>
+        <button class="nav-link" data-view="map">Real-world map</button>
+        <button class="nav-link" data-view="discoveries">Discoveries <span id="nav-progress">0/6</span></button>
+      </nav>
+      <button id="sound-toggle" class="icon-button" aria-label="Toggle ambience" title="Adventure controls">?</button>
+    </header>
+
+    <main>
+      <section id="view-adventure" class="view active-view">
+        <div class="adventure-heading"><div><p class="eyebrow">YOUR NEIGHBOURHOOD, A NEW ADVENTURE</p><h1>Walk the stories of <em>Ward 16.</em></h1><p class="lead">Play as Aarav, discover six pieces of living heritage, then follow their real streets on foot.</p></div><div class="journey-pill"><span class="pulse"></span> SIX STORIES · FOUR PLACES</div></div>
+        <div class="game-mode-row"><span>CHOOSE YOUR TRAIL</span><button class="mode-choice selected" data-mode="guided">Guided adventure</button><button class="mode-choice" data-mode="free">Free exploration</button><small id="mode-description">Follow Aarav's golden wayfinding arrows from place to place.</small></div>
+        <div class="game-frame-wrap"><iframe id="game-frame" title="Aarav's Ward 16 Heritage Adventure" src="/game/adventure.html" allow="fullscreen"></iframe><div class="game-caption"><span><b>Aarav's adventure</b><small>Canvas game · fictional world · not a real map</small></span><button class="quiet-button" id="open-map-from-game">Open real-world map ↗</button></div></div>
+        <div class="below-game"><div><span class="section-kicker">HOW THE TRAIL CONNECTS</span><h2>Game discoveries lead to real places.</h2></div><p>Explore the original game first. Use the map to navigate between Siddhi Ganesh, Mhepi Ajima, Balaju 22 Dhara and Nanak Math. Koncha Dyo and Sitalamai are discoveries inside their nearby areas.</p><button class="text-button" data-view="discoveries">Browse all six stories <span>→</span></button></div>
+      </section>
+
+      <section id="view-map" class="view" hidden>
+        <div class="map-heading"><div><p class="eyebrow">REAL STREETS · REAL GPS</p><h1>Find your way through <em>Ward 16.</em></h1><p class="lead">Four heritage destinations, in the route order from your map.</p></div><div class="map-controls"><label for="destination">Destination</label><select id="destination"></select><button id="start-navigation" class="primary-button">Start navigation</button><button id="stop-navigation" class="secondary-button" hidden>Stop navigation</button></div></div>
+        <div class="map-layout"><div class="map-column"><div id="map" aria-label="Map of heritage destinations"></div><div class="map-legend"><span><i class="legend-destination"></i> Heritage place</span><span><i class="legend-user"></i> Your location</span><span><i class="legend-route"></i> Walking route</span></div></div><aside class="route-panel"><div class="route-status"><span class="status-dot" id="status-dot"></span><div><b id="route-title">Choose a destination</b><small id="route-status">Select a pin or destination above.</small></div></div><div class="route-stats" id="route-stats" hidden><div><b id="route-distance">—</b><small>Distance</small></div><div><b id="route-duration">—</b><small>Walking time</small></div></div><div id="route-message" class="route-message">Allow location access to route from your current position. If you prefer, click the map to set a starting point manually.</div><div class="directions-title" id="directions-title" hidden>WALKING DIRECTIONS</div><ol id="directions" class="directions"></ol><button id="locate-me" class="secondary-button full-width">Use my current location</button><p class="map-note">Walking routes and steps are returned by OpenRouteService. Check local access and conditions as you walk.</p></aside></div>
+      </section>
+
+      <section id="view-discoveries" class="view" hidden>
+        <div class="discover-heading"><p class="eyebrow">SIX STORIES · FOUR GPS DESTINATIONS</p><h1>Meet Ward 16's <em>living heritage.</em></h1><p class="lead">Short discoveries to carry with you as you explore. Photographs can be added to the image placeholders at any time.</p><div class="progress-line"><span id="progress-label">0 of 6 discovered</span><div><i id="progress-fill"></i></div></div></div>
+        <div id="heritage-grid" class="heritage-grid"></div>
+      </section>
+    </main>
+    <footer><span>त TARKA · KATHMANDU WARD 16</span><span>Adventure world is fictional. Map markers show real destinations.</span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a></footer>
+  </div>
+  <dialog id="site-dialog" class="site-dialog"><button class="dialog-close" id="dialog-close" aria-label="Close">×</button><div class="dialog-image" id="dialog-image"></div><p class="eyebrow" id="dialog-area"></p><h2 id="dialog-title"></h2><p id="dialog-subtitle" class="dialog-subtitle"></p><p id="dialog-description" class="dialog-description"></p><div class="dialog-actions"><button class="secondary-button" id="dialog-continue">Continue exploring</button><button class="primary-button" id="dialog-navigate">Navigate in real world</button></div></dialog>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Ward 16: Heritage Adventure</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2b1d3a;--card:#fff8e8;--muted:#7a6a5c;--bg:#1d1330;color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#f6ead2;--card:#2f2146;--muted:#c0b0cf;--bg:#0f0a1a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);font-family:'Baloo 2',system-ui,sans-serif;overscroll-behavior:none;touch-action:none;user-select:none;-webkit-user-select:none}
+#app{position:relative;width:min(100vw,440px);height:100dvh;max-height:940px;margin:0 auto;overflow:hidden;background:#6cb36f}
+@media(min-width:500px){#app{margin:max(0px,calc((100dvh - min(100dvh,940px))/2)) auto;border-radius:28px;box-shadow:0 20px 60px #0009}}
+canvas{width:100%;height:100%;display:block;cursor:crosshair}
+.hud{position:absolute;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 0;display:flex;gap:8px;align-items:flex-start;pointer-events:none}
+.chip{flex:1;background:rgba(43,29,58,.82);color:#fff3d6;border-radius:16px;padding:7px 12px 8px;backdrop-filter:blur(6px)}
+.chip small{display:block;font-size:10px;letter-spacing:.12em;color:#f5b73c;font-weight:700}
+.chip b{display:block;font-size:17px;line-height:1.15}
+#dots{display:flex;gap:5px;margin-top:5px}
+#dots i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.22)}
+#dots i.d{background:#4fd49b}#dots i.c{background:#f5b73c}
+#help{pointer-events:auto;width:40px;height:40px;border-radius:50%;border:0;background:rgba(43,29,58,.82);color:#fff3d6;font:800 18px inherit;font-family:inherit;cursor:pointer}
+#toast{position:absolute;top:calc(env(safe-area-inset-top,0px) + 92px);left:50%;transform:translateX(-50%);background:#fff8e8;color:#2b1d3a;padding:7px 14px;border-radius:14px;font-weight:700;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:88%;box-shadow:0 4px 14px #0004}
+#pad{position:absolute;left:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);width:128px;height:128px;border-radius:50%;background:rgba(255,248,232,.28);border:2px solid rgba(255,248,232,.55);display:grid;place-items:center;touch-action:none}
+#knob{width:56px;height:56px;border-radius:50%;background:rgba(255,248,232,.88);box-shadow:0 3px 10px #0004;pointer-events:none}
+.hint{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 142px);color:#fff;font-weight:700;font-size:11px;text-align:right;text-shadow:0 1px 4px #000a;pointer-events:none;line-height:1.3}#dpad{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);display:grid;grid-template-columns:repeat(3,36px);grid-template-rows:repeat(3,36px);gap:3px;touch-action:none}#dpad button{border:1px solid rgba(255,248,232,.72);border-radius:11px;background:rgba(43,29,58,.72);color:#fff8e8;font:800 18px system-ui;box-shadow:0 2px 8px #0004;touch-action:none}#dpad button:active{background:#f5b73c;color:#2b1d3a}#dpad [data-key="ArrowUp"]{grid-area:1/2}#dpad [data-key="ArrowLeft"]{grid-area:2/1}#dpad [data-key="ArrowDown"]{grid-area:2/2}#dpad [data-key="ArrowRight"]{grid-area:2/3}
+.ov{position:absolute;inset:0;background:rgba(15,8,28,.6);display:flex;align-items:flex-end;justify-content:center;z-index:5}
+.ov[hidden]{display:none}
+.ov.mid{align-items:center}
+.card{width:100%;background:var(--card);color:var(--ink);border-radius:26px 26px 0 0;padding:20px 20px calc(env(safe-area-inset-bottom,0px) + 20px);text-align:center;touch-action:auto;user-select:text}
+.ov.mid .card{width:calc(100% - 32px);border-radius:26px}
+.card .art{font-size:46px;line-height:1}
+.card small.k{display:block;font-size:11px;letter-spacing:.12em;color:#c8841a;font-weight:800;margin-top:6px}
+.card h2{margin:2px 0 6px;font-size:24px;line-height:1.1}
+.card p{margin:0 0 10px;font-size:14px;line-height:1.35;color:var(--muted);font-weight:500}
+.fact{display:inline-block;background:rgba(245,183,60,.2);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;margin-bottom:12px}
+.row{display:flex;gap:8px}
+.row a,.btn{flex:1;border:0;border-radius:16px;padding:11px 8px;font:800 15px 'Baloo 2',system-ui,sans-serif;cursor:pointer;text-decoration:none;text-align:center}
+.row a{background:rgba(125,100,160,.18);color:var(--ink)}
+.btn{background:#f5b73c;color:#2b1d3a;width:100%}
+.row .btn{flex:1.3}
+input{width:100%;padding:10px 12px;border-radius:12px;border:2px solid #e3c98d;background:#fffdf5;font:700 16px 'Baloo 2',system-ui,sans-serif;color:#2b1d3a;text-align:center;margin:4px 0 10px;user-select:text}
+.sw{display:flex;justify-content:center;gap:10px;margin:6px 0 14px}
+.sw button{width:36px;height:36px;border-radius:50%;border:3px solid transparent;background:var(--c);cursor:pointer}
+.sw button.on{border-color:#2b1d3a;box-shadow:0 0 0 2px #fff8e8 inset}
+ul{text-align:left;margin:0 0 12px;padding-left:20px;font-size:14px;color:var(--muted)}
+/* Welcome screen only: Ward 16 photography, while the playable world stays untouched. */
+#start.ov.mid{overflow:hidden;padding:12px;background:#170f27}
+#start::before{content:"";position:absolute;inset:-8px;background:linear-gradient(180deg,rgba(21,15,34,.42),rgba(19,12,30,.66)),url('/images/mhepi-ajima.jpg') center 47%/cover;filter:saturate(.88);transform:scale(1.02);pointer-events:none}
+#start::after{content:"KATHMANDU · WARD 16";position:absolute;left:18px;bottom:16px;color:#fff3d2;font-size:9px;letter-spacing:.16em;text-shadow:0 1px 8px #000;pointer-events:none}
+#start .card{position:relative;z-index:1;width:min(100% - 12px,460px);max-height:calc(100% - 24px);overflow-y:auto;scrollbar-width:thin;border:1px solid rgba(255,238,195,.26);border-radius:28px;padding:20px 22px 22px;background:rgba(43,29,58,.94);color:#fff6df;backdrop-filter:blur(10px);box-shadow:0 24px 64px rgba(9,5,18,.48);animation:welcome-in .55s cubic-bezier(.2,.8,.2,1) both}
+#start .card .art{font-size:38px}
+#start .card small.k{color:#f5bd58;margin-top:2px}
+#start .card h2{font-size:27px;margin:2px 0 4px;color:#fff5db}
+#start .card p{color:#e3d7ec;margin-bottom:10px}
+.welcome-gallery-label{display:block;text-align:left;font-size:9px;letter-spacing:.14em;color:#f3c875;font-weight:800;margin:12px 0 7px}
+.welcome-gallery{display:flex;gap:8px;overflow-x:auto;padding:1px 1px 8px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:#c69a54 transparent;touch-action:pan-x;user-select:none}
+.welcome-gallery figure{position:relative;flex:0 0 78px;height:76px;margin:0;border:1px solid rgba(255,244,216,.48);border-radius:11px;overflow:hidden;scroll-snap-align:start;background:#554361;box-shadow:0 5px 14px #100a1b55}
+.welcome-gallery img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .25s}
+.welcome-gallery figure:hover img{transform:scale(1.07)}
+.welcome-gallery figcaption{position:absolute;left:0;right:0;bottom:0;padding:13px 4px 4px;background:linear-gradient(transparent,rgba(19,12,29,.92));color:#fff9e9;font-size:8px;font-weight:700;line-height:1.1;text-align:left}
+.name-label{display:block;text-align:left;font-size:11px;font-weight:700;color:#f4e5c7;margin:5px 0 0}
+#nameInput{margin:4px 0 7px;border-color:#dec58e;background:#fffaf0;color:#342241}
+#nameInput::placeholder{color:#968a9a;font-weight:500}
+#start .sw{margin:5px 0 12px;gap:12px}
+#start .sw button.on{border-color:#fff0c8;box-shadow:0 0 0 2px rgba(255,248,232,.35)}
+#start #go{border-radius:16px;padding:13px 10px;background:linear-gradient(135deg,#ffd05b,#f4ad2e);box-shadow:0 7px 18px rgba(220,151,36,.24);transition:transform .18s,filter .18s}
+#start #go:hover{transform:translateY(-2px);filter:brightness(1.04)}
+@keyframes welcome-in{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-height:700px){#start .card{padding:13px 18px 16px}#start .card .art{font-size:30px}.welcome-gallery figure{height:62px;flex-basis:70px}.welcome-gallery-label{margin-top:8px}#start .card p{font-size:12px;margin-bottom:6px}}
+@media(max-width:380px){#start .card{padding:15px 15px 18px}.welcome-gallery figure{flex-basis:70px;height:68px}#start .sw{gap:8px}#start .sw button{width:34px;height:34px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+  <div class="hud">
+    <div class="chip"><small id="area">WARD 16 • BALAJU</small><b id="obj">Explore Siddhi Ganesh Temple</b><div id="dots"></div></div>
+    <button id="help" aria-label="How to play">?</button>
+  </div>
+  <div id="toast"></div>
+  <div id="pad"><div id="knob"></div></div>
+  <div class="hint">Click a path, drag the stick,<br>or hold an arrow</div>
+  <div id="dpad" aria-label="Directional movement"><button data-key="ArrowUp" aria-label="Walk up">↑</button><button data-key="ArrowLeft" aria-label="Walk left">←</button><button data-key="ArrowDown" aria-label="Walk down">↓</button><button data-key="ArrowRight" aria-label="Walk right">→</button></div>
+
+  <div class="ov mid" id="start"><div class="card">
+    <div class="art">🛕</div><small class="k">KATHMANDU • WARD 16</small><h2>Heritage Adventure</h2>
+    <p>Choose your look, then follow the six heritage stories through the adventure.</p>
+    <span class="welcome-gallery-label">SIX PLACES TO DISCOVER · SWIPE TO EXPLORE</span>
+    <div class="welcome-gallery" aria-label="Ward 16 heritage photo highlights">
+      <figure><img src="/images/siddhi-ganesh.jpg" alt="Siddhi Ganesh Temple"><figcaption>Siddhi Ganesh</figcaption></figure>
+      <figure><img src="/images/koncha-dyo.jpg" alt="Koncha Dyo"><figcaption>Koncha Dyo</figcaption></figure>
+      <figure><img src="/images/mhepi-ajima.jpg" alt="Mhepi Ajima"><figcaption>Mhepi Ajima</figcaption></figure>
+      <figure><img src="/images/nanak-math.jpg" alt="Nanak Math"><figcaption>Nanak Math</figcaption></figure>
+      <figure><img src="/images/balaju-22-dhara.jpg" alt="Balaju 22 Dhara"><figcaption>Balaju 22 Dhara</figcaption></figure>
+      <figure><img src="/images/pyatho-ajima.jpg" alt="Pyatho Ajima / Sitalamai"><figcaption>Pyatho Ajima</figcaption></figure>
+    </div>
+    <label class="name-label" for="nameInput">What should we call you?</label>
+    <input id="nameInput" maxlength="14" value="" placeholder="Enter your name..." aria-label="Enter your name">
+    <div class="sw" id="sw">
+      <button class="on" style="--c:#ef6c55" data-c="#ef6c55" aria-label="Coral"></button>
+      <button style="--c:#6c63d9" data-c="#6c63d9" aria-label="Purple"></button>
+      <button style="--c:#20a88a" data-c="#20a88a" aria-label="Teal"></button>
+      <button style="--c:#e3a52e" data-c="#e3a52e" aria-label="Gold"></button>
+      <button style="--c:#3788c9" data-c="#3788c9" aria-label="Blue"></button>
+    </div>
+    <button class="btn" id="go">Start walking →</button>
+  </div></div>
+
+  <div class="ov" id="site" hidden><div class="card">
+    <div class="art" id="sArt"></div><small class="k" id="sCount"></small><h2 id="sTitle"></h2>
+    <p id="sDesc"></p><div class="fact" id="sFact"></div>
+    <div class="row"><a id="sMap" href="#">Navigate in real world ↗</a><button class="btn" id="sGo">Continue →</button></div>
+  </div></div>
+
+  <div class="ov mid" id="helpM" hidden><div class="card">
+    <div class="art">🎮</div><h2>How to play</h2>
+    <ul><li>Click or tap a path to send Aarav there, or hold the arrow buttons / use WASD</li><li>Drag the left joystick for free movement</li><li>Follow the gold wayfinding arrows through all six heritage stories</li><li>Walk into a glowing ring to discover a site; switch to Free exploration to visit them in any order</li></ul>
+    <button class="btn" id="helpOk">Let’s go!</button>
+  </div></div>
+
+  <div class="ov mid" id="win" hidden><div class="card">
+    <div class="art">🏆</div><small class="k">WARD 16 EXPLORER</small><h2>Adventure complete!</h2>
+    <p>You followed the whole route — Siddhi Ganesh, Konch Dyo, Mhepi Ajima, Guru Nanak Temple, 22 Dhara and Sitala Ajima.</p>
+    <button class="btn" id="again">Explore again ↻</button>
+  </div></div>
+</div>
+
+<script>
+(()=>{
+const cv=document.getElementById('c'),ctx=cv.getContext('2d'),$=id=>document.getElementById(id);
+const WW=400,WH=3020;
+// walkable areas [x1,y1,x2,y2]
+const RECTS=[[30,2720,370,2880],[30,2000,120,2880],[30,2000,200,2080],[280,1000,370,2880],[140,1705,370,1790],[260,890,380,1016],[60,1250,370,1320],[60,280,150,1320],[40,280,300,430]];
+const ROADCOL=['#d9cdb8','#cdbfa8','#d9cdb8','#d2c6b0','#d2c6b0','#d9cdb8','#d2c6b0','#d2c6b0','#d9cdb8'];
+const STRUCT=[[110,2450,290,2705],[20,1820,140,2002],[140,1520,250,1705],[285,730,385,885],[300,265,390,405],[40,140,360,275],[100,2770,300,2900]];
+const sites=[
+{n:'Siddhi Ganesh Temple',e:'🐘',x:200,y:2745,desc:'Your starting point. Siddhi Ganesh is a neighbourhood shrine dedicated to Lord Ganesh, worshipped as the remover of obstacles and a bringer of good beginnings. Explore the courtyard, then head upstairs on the left.',fact:'Dedicated to Lord Ganesh • start of the route',maps:'https://www.google.com/maps/search/?api=1&query=Siddhi+Ganesh+Temple+Kathmandu+Ward+16'},
+{n:'Konch Dyo',e:'🏯',x:80,y:2045,desc:'Up the long staircase from Siddhi Ganesh, on the upper level, stands Konch Dyo, a compact one-storey temple. Notice how far the courtyard now lies below you.',fact:'One-storey temple • same location as Siddhi Ganesh',maps:null},
+{n:'Exit Siddhi Ganesh',e:'🚪',x:325,y:2770,desc:'You have come back down the stairs and left through the Siddhi Ganesh temple area. The golden arrows now point forward, up the street, towards Mhepi Ajima.',fact:'Next destination: Mhepi Ajima ↑',maps:'https://www.google.com/maps/search/?api=1&query=Siddhi+Ganesh+Temple+Kathmandu+Ward+16'},
+{n:'Mhepi Ajima',e:'🛕',x:195,y:1750,desc:'Mhepi Ajima is a hilltop shrine revered in the Newar Ajima tradition and associated with Yogambara Gyaneshwari. It is the next important landmark straight ahead of Siddhi Ganesh.',fact:'Hilltop temple • Mhepi Marg, Ward 16',maps:'https://www.google.com/maps/search/?api=1&query=Mhepi+Ajima+Temple+Kathmandu'},
+{n:'Guru Nanak Temple',e:'🪯',x:335,y:925,desc:'From Mhepi Ajima, keep going up the steps to the Guru Nanak Temple on the upper ground. A historic Sikh-associated sacred place; local tradition connects it with Guru Nanak’s visit to Nepal.',fact:'Sikh heritage • same map location as Mhepi Ajima',maps:'https://www.google.com/maps/search/?api=1&query=Mhepi+Ajima+Temple+Kathmandu'},
+{n:'22 Dhara',e:'⛲',x:150,y:335,desc:'Back down from Guru Nanak, turn left and follow the path to Balaju’s Baisdhara, known for its twenty-two traditional stone water spouts and the Valley’s historic water culture.',fact:'Twenty-two carved stone spouts • Balaju',maps:'https://www.google.com/maps/search/?api=1&query=Balaju+22+Dhara+Kathmandu'},
+{n:'Sitala Ajima',e:'🌺',x:280,y:385,desc:'Within the 22 Dhara area stands Sitala Ajima, a shrine of the protective mother-goddess tradition of the Kathmandu Valley — another important religious destination to finish the route.',fact:'Ajima / Sitala tradition • lies within Balaju 22 Dhara',maps:null}
+];
+const WP=[[200,2745],[75,2780],[75,2400],[80,2045],[75,2400],[75,2790],[325,2770],[325,2200],[325,1760],[195,1752],[325,1760],[325,1300],[325,1020],[335,925],[325,1290],[200,1285],[105,1285],[105,800],[105,350],[150,335],[280,385]];
+const MSG=['Explore Siddhi Ganesh Temple','Go upstairs to Konch Dyo','Return to the street, then head to Mhepi Ajima','Return to the street, then head to Mhepi Ajima','Go up to Guru Nanak Temple','Come down, turn left: 22 Dhara','Visit Sitala Ajima'];
+const P={x:200,y:2845,dir:0,color:'#ef6c55',name:'Aarav',moving:false,ph:0};
+const done=new Set();let active=0,wp=0,started=false,modal=false,freeExplore=false,lastVisited=-1,now=0,cam=WH,toastT=0,lastFrame=0;
+const keys={};
+const inR=(x,y,m=0)=>RECTS.some(r=>x>r[0]+m&&x<r[2]-m&&y>r[1]&&y<r[3]);
+const hit=(b,r,m)=>b[0]<r[2]+m&&b[2]>r[0]-m&&b[1]<r[3]+m&&b[3]>r[1]-m;
+let sd=11;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;
+const CELL=16,GRID_W=Math.ceil(WW/CELL),GRID_H=Math.ceil(WH/CELL);let walkPath=[],walkTarget=null;
+function cellPoint(id){return{x:(id%GRID_W)*CELL+CELL/2,y:Math.floor(id/GRID_W)*CELL+CELL/2}}
+function nearestWalkableCell(x,y){const gx=Math.max(0,Math.min(GRID_W-1,Math.round((x-CELL/2)/CELL))),gy=Math.max(0,Math.min(GRID_H-1,Math.round((y-CELL/2)/CELL)));let best=-1,bestD=Infinity;for(let ring=0;ring<=8;ring++){for(let oy=-ring;oy<=ring;oy++)for(let ox=-ring;ox<=ring;ox++){if(Math.max(Math.abs(ox),Math.abs(oy))!==ring)continue;const cx=gx+ox,cy=gy+oy;if(cx<0||cx>=GRID_W||cy<0||cy>=GRID_H)continue;const p={x:cx*CELL+CELL/2,y:cy*CELL+CELL/2};if(!inR(p.x,p.y,4))continue;const d=(p.x-x)**2+(p.y-y)**2;if(d<bestD){bestD=d;best=cy*GRID_W+cx}}if(best>=0)return best}return-1}
+function segmentWalkable(a,b){const n=Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/7);for(let i=0;i<=n;i++){const t=n?i/n:0;if(!inR(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,5))return false}return true}
+function setWalkTarget(x,y){if(!started||modal)return false;const start=nearestWalkableCell(P.x,P.y),end=nearestWalkableCell(x,y);if(start<0||end<0)return false;const total=GRID_W*GRID_H,prev=new Int32Array(total);prev.fill(-1);const queue=new Int32Array(total);let head=0,tail=0;queue[tail++]=start;prev[start]=start;const dirs=[[-1,0],[1,0],[0,-1],[0,1]];while(head<tail&&prev[end]===-1){const id=queue[head++],cx=id%GRID_W,cy=Math.floor(id/GRID_W);for(const[dx,dy]of dirs){const nx=cx+dx,ny=cy+dy;if(nx<0||nx>=GRID_W||ny<0||ny>=GRID_H)continue;const next=ny*GRID_W+nx;if(prev[next]!==-1)continue;const p=cellPoint(next);if(!inR(p.x,p.y,4))continue;prev[next]=id;queue[tail++]=next}}if(prev[end]===-1)return false;const raw=[];for(let id=end;id!==start;id=prev[id])raw.push(cellPoint(id));raw.reverse();const exact=inR(x,y,5)?{x,y}:cellPoint(end);const pts=[{x:P.x,y:P.y},...raw,exact];walkPath=[];let at=0;while(at<pts.length-1){let far=at+1;for(let j=at+2;j<pts.length;j++){if(segmentWalkable(pts[at],pts[j]))far=j;else break}walkPath.push(pts[far]);at=far}walkTarget=exact;return true}
+
+// ---------- drawing helpers ----------
+function rr(x,y,w,h,r,c){if(c)ctx.fillStyle=c;r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill()}
+function pl(p,c){ctx.fillStyle=c;ctx.beginPath();p.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fill()}
+function el(x,y,rx,ry,c){ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,7);ctx.fill()}
+function ln(a,b,c,d,col,w=2){ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.stroke()}
+function tx(s,x,y,sz,c,al='center'){ctx.font=`800 ${sz}px 'Baloo 2',system-ui,sans-serif`;ctx.textAlign=al;ctx.fillStyle=c;ctx.fillText(s,x,y)}
+function lbl(cx,y,s,sz=11){ctx.font=`800 ${sz}px 'Baloo 2',system-ui,sans-serif`;const w=ctx.measureText(s).width+14;rr(cx-w/2,y-sz-3,w,sz+8,(sz+8)/2,'rgba(43,29,58,.88)');tx(s,cx,y+1,sz,'#fff3d6')}
+
+// ---------- scenery ----------
+const D=[],add=(y,f)=>D.push({y,f});
+function tree(x,y,s,k){add(y,()=>{el(x,y+1,13*s,5*s,'rgba(0,0,0,.18)');
+ if(k){rr(x-2*s,y-12*s,4*s,12*s,1,'#6e4a2e');[['#2f7a52',0,.0],['#3a8f5f',-10,.0],['#48a86e',-20,0]].forEach((l,i)=>pl([[x-(17-i*3)*s,y-(10+i*16)*s],[x+(17-i*3)*s,y-(10+i*16)*s],[x,y-(34+i*16)*s]],l[0]))}
+ else{rr(x-3*s,y-20*s,6*s,20*s,2,'#7b5233');el(x,y-32*s,17*s,16*s,'#3b8f63');el(x-8*s,y-26*s,11*s,10*s,'#4aa573');el(x+8*s,y-28*s,11*s,11*s,'#58b67f');el(x-3*s,y-38*s,8*s,6*s,'#74cc92')}})}
+function house(x,y,w,h,i){const walls=['#a8503a','#b8694a','#c98a5b','#9b4a3f'],roofs=['#6e3b34','#5a4a6e','#7d4a2f','#4f5f55'];
+ add(y,()=>{const wc=walls[i%4],rc=roofs[(i+1)%4];el(x+w/2,y+2,w*.55,6,'rgba(0,0,0,.18)');rr(x,y-h,w,h,2,wc);
+ for(let b=y-h+7;b<y;b+=8)ln(x,b,x+w,b,'rgba(0,0,0,.13)',1);
+ pl([[x-7,y-h+8],[x+w+7,y-h+8],[x+w-9,y-h-20],[x+9,y-h-20]],rc);ln(x-7,y-h+8,x+w+7,y-h+8,'#e7b45a',2.5);
+ for(let k=0;k<2;k++){const wx=x+w*(.14+k*.5);rr(wx,y-h*.78,w*.3,h*.26,2,'#4a2e1e');for(let g=1;g<4;g++)ln(wx+g*w*.075,y-h*.78,wx+g*w*.075,y-h*.52,'#c79a62',1.2);ln(wx,y-h*.65,wx+w*.3,y-h*.65,'#c79a62',1.2)}
+ rr(x+w*.38,y-h*.38,w*.24,h*.38,3,'#3d2418');if(i%2)rr(x+w*.05,y-h*.4,w*.26,5,1,i%4===1?'#e0533d':'#3d8fd0')})}
+function sign(x,y,a,b,dr){add(y,()=>{el(x,y+2,36,6,'rgba(0,0,0,.2)');rr(x-40,y-30,6,32,1,'#6b4a2f');rr(x+34,y-30,6,32,1,'#6b4a2f');
+ rr(x-55,y-84,110,56,8,'#6b4a2f');rr(x-52,y-81,104,50,6,'#ecc880');tx(a,x,y-62,11,'#7a4a1c');tx(b,x,y-44,b.length>12?13:15,'#4a2410');
+ const t=Math.sin(now/220)*3;if(dr==='left')pl([[x-86+t,y-56],[x-62+t,y-70],[x-62+t,y-42]],'#f5b73c');else pl([[x-11,y-88+t],[x+11,y-88+t],[x,y-106+t]],'#f5b73c');ctx.strokeStyle='#8a5a1a';ctx.lineWidth=1.5;ctx.stroke()})}
+function pagoda(cx,by,w,tiers,o){o=o||{};const wall=o.wall||'#b5543c',roof=o.roof||'#8c3b2e',gold='#f2b53c',wh=o.wh||46;
+ for(let i=0;i<3;i++){const hw=w/2+10-i*5;rr(cx-hw,by-6*(i+1),hw*2,6,2,['#cfc4b2','#bdb09c','#a99c88'][i])}
+ const top=by-18;rr(cx-w*.38,top-wh,w*.76,wh,2,wall);
+ for(let b=top-wh+8;b<top;b+=8)ln(cx-w*.38,b,cx+w*.38,b,'rgba(0,0,0,.12)',1);
+ rr(cx-9,top-30,18,30,8,'#3d2418');ctx.strokeStyle=gold;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(cx,top-28,13,Math.PI,0);ctx.stroke();
+ for(let i=0;i<7;i++)el(cx-12+i*4,top-38+Math.abs(i-3)*1.4,1.8,1.8,i%2?'#ff9d2e':'#ffc84a');
+ rr(cx-w*.34,top-wh*.7,w*.16,wh*.34,2,'#4a2e1e');rr(cx+w*.18,top-wh*.7,w*.16,wh*.34,2,'#4a2e1e');
+ let y=top-wh;
+ for(let t=0;t<tiers;t++){const rw=w*(1.18-t*.22);
+  pl([[cx-rw/2-10,y+3],[cx+rw/2+10,y+3],[cx+rw*.26,y-24],[cx-rw*.26,y-24]],roof);
+  for(let k=1;k<6;k++){const f=k/6;ln(cx-(rw/2+10)*(1-f)-rw*.26*f,y+3-27*f,cx+(rw/2+10)*(1-f)+rw*.26*f,y+3-27*f,'rgba(0,0,0,.16)',1)}
+  ln(cx-rw/2-10,y+3,cx+rw/2+10,y+3,gold,3);el(cx-rw/2-8,y+8,2.4,3,gold);el(cx+rw/2+8,y+8,2.4,3,gold);
+  y-=24;if(t<tiers-1){rr(cx-rw*.28,y-14,rw*.56,14,2,wall);rr(cx-5,y-11,10,8,2,'#4a2e1e');y-=14}}
+ rr(cx-3,y-8,6,9,1,gold);pl([[cx-6,y-8],[cx+6,y-8],[cx,y-34]],gold);ln(cx,y-34,cx,y-42,gold,2);
+ return y-42}
+function drawGaneshArt(cx,by){tx('🐘',cx,by-78,14,'#fff')}
+
+// Siddhi Ganesh (big 2-tier temple)
+add(2700,()=>{el(200,2704,100,12,'rgba(0,0,0,.15)');const t=pagoda(200,2700,120,2,{wall:'#b5543c',roof:'#8c3b2e',wh:50});
+ el(120,2696,7,5,'#9a9a9a');el(280,2696,7,5,'#9a9a9a');
+ [130,270].forEach(f=>{ln(f,2700,f,2640,'#6b4a2f',2);pl([[f,2640],[f+(f<200?-16:16),2646],[f,2652]],'#ff7a2e')});
+ lbl(200,t-6,'SIDDHI GANESH TEMPLE',12)});
+// main entrance gate (start)
+add(2895,()=>{[125,275].forEach(x=>{rr(x-9,2775,18,120,2,'#b5543c');rr(x-12,2768,24,8,2,'#d9c9a8');rr(x-12,2888,24,7,2,'#a99c88')});
+ rr(113,2776,174,16,3,'#8c3b2e');ln(113,2792,287,2792,'#f2b53c',3);rr(138,2730,124,40,8,'#6b4a2f');rr(141,2733,118,34,6,'#ecc880');tx('MAIN ENTRANCE',200,2748,10,'#7a4a1c');tx('SIDDHI GANESH',200,2763,14,'#4a2410');
+ for(let i=0;i<9;i++)el(130+i*17,2795+Math.abs(i-4)*1.5,2.2,2.2,i%2?'#ff9d2e':'#ffc84a')});
+// Konch Dyo (one storey, upper level)
+add(2000,()=>{el(80,2004,70,10,'rgba(0,0,0,.15)');const t=pagoda(80,2000,100,1,{wall:'#c06a48',roof:'#7d3a2f',wh:44});
+ ln(100,1968,100,1980,'#f2b53c',1.5);el(100,1984,3,4,'#f2b53c');lbl(80,t-6,'KONCH DYO',12);lbl(165,2038,'UPPER LEVEL ⬆',10)});
+add(2740,()=>lbl(75,2745,'KONCH DYO ⬆ STAIRS',10));
+add(2400,()=>lbl(75,2400,'LONG STAIRS ⬆',10));
+// exit direction banner + chevrons
+add(2700,()=>{if(active<2||active>3)return;lbl(325,2655+Math.sin(now/200)*3,'MHEPI AJIMA ➜ AHEAD',10);
+ for(let k=0;k<6;k++){const y=2700-k*55-((now/14)%55),x=325;ctx.globalAlpha=Math.max(0,Math.min(1,(y-2300)/150));pl([[x-14,y+8],[x,y-6],[x+14,y+8],[x+14,y+15],[x,y+1],[x-14,y+15]],'#ffc247');ctx.globalAlpha=1}});
+// Mhepi Ajima (hilltop, straight ahead)
+add(1700,()=>{el(195,1698,62,24,'#7fb87a');el(195,1690,48,16,'#93c98c');const t=pagoda(195,1688,76,2,{wall:'#a8503a',roof:'#6a3f86',wh:40});lbl(195,t-6,'MHEPI AJIMA',12)});
+// Guru Nanak ascent: raised terrace, steps and entrance gate
+add(885,()=>{rr(262,884,118,20,3,'#bfb29c');for(let i=0;i<5;i++)ln(270+i*26,886,270+i*26,902,'rgba(0,0,0,.15)',1);
+ ctx.save();ctx.translate(0,460);el(335,428,56,9,'rgba(0,0,0,.15)');rr(290,358,90,66,3,'#f6efe0');rr(286,420,98,6,2,'#c9bca3');
+ for(let i=0;i<3;i++){rr(298+i*28,376,18,30,9,'#3d6fa8');rr(298+i*28,376,18,8,4,'#5d8fc8')}
+ rr(325,396,20,28,10,'#7a4a2a');el(335,350,24,24,'#fff8e8');el(335,338,14,16,'#f2b53c');pl([[331,325],[339,325],[335,308]],'#f2b53c');
+ [300,370].forEach(x=>{rr(x-5,340,10,18,2,'#f6efe0');el(x,338,7,8,'#f2b53c')});
+ ln(296,426,296,300,'#6b4a2f',2.5);const w=Math.sin(now/260)*3;pl([[296,302],[318,308+w],[296,316]],'#ff8a1f');
+ lbl(335,290,'GURU NANAK TEMPLE',12);ctx.restore()});
+add(1000,()=>{[290,360].forEach(x=>{rr(x-7,930,14,72,2,'#f6efe0');el(x,928,8,6,'#f2b53c')});rr(280,924,90,10,3,'#f2b53c');lbl(325,914,'ENTRANCE ⬆ UPPER LEVEL',9)});
+// turn-left sign for 22 Dhara
+sign(232,1240,'TURN LEFT','22 DHARA','left');
+// 22 Dhara
+add(270,()=>{ctx.save();ctx.translate(0,130);rr(60,106,280,34,6,'#6bb7d6');rr(60,106,280,6,3,'#4a9cc0');rr(52,66,296,44,3,'#9a9288');rr(52,60,296,8,3,'#b5aca0');
+ for(let i=0;i<22;i++){const x=64+i*12.6;rr(x-2,84,4,9,1.5,'#6e5a3c');const o=(now/90+i*3)%14;ln(x,93,x,93+o*1.1,'rgba(180,230,255,.9)',1.6);el(x,128+((i*7)%5),2,1,'rgba(255,255,255,.7)')}
+ [52,340].forEach(x=>{rr(x-6,40,12,78,2,'#a89e92');el(x,38,8,6,'#f2b53c')});lbl(200,32,'22 DHARA',13);ctx.restore()});
+// Sitala Ajima (inside the 22 Dhara area)
+add(400,()=>{el(345,403,42,8,'rgba(0,0,0,.15)');const t=pagoda(345,400,60,1,{wall:'#d79c80',roof:'#a24b52',wh:38});lbl(345,t-6,'SITALA AJIMA',12)});
+
+// site markers
+sites.forEach((s,i)=>add(s.y,()=>{if(i===2)return;const t=now/1000,dn=done.has(i);ctx.globalAlpha=.32+.14*Math.sin(t*3);el(s.x,s.y,24+Math.sin(t*3)*3,10,dn?'#3fc08b':'#ffcf4a');ctx.globalAlpha=1;
+ ctx.strokeStyle=dn?'#2b9e70':'#e7a21b';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(s.x,s.y,19,8,0,0,7);ctx.stroke();
+ const b=Math.sin(t*4)*3;el(s.x,s.y-26+b,13,13,dn?'#3fc08b':'#fff4cc');tx(dn?'✓':s.e,s.x,s.y-20+b,dn?17:16,dn?'#fff':'#000');
+ if(i===active&&!dn)lbl(s.x,s.y-48+b,'NEXT STOP',10)}));
+
+// houses along the street
+const boxes=[];let hi=0;
+[[150,1330,2400,98],[168,330,1230,100]].forEach(g=>{for(let y=g[1]+60;y<g[2];y+=g[3]+((hi*37)%30),hi++){const w=84+((hi*13)%14),h=62+((hi*29)%34),x=g[0]+((hi*5)%10),b=[x-8,y-h-24,x+w+8,y+4];
+ if(RECTS.some(r=>hit(b,r,12))||STRUCT.some(r=>hit(b,r,8)))continue;boxes.push(b);house(x,y,w,h,hi)}});
+// trees
+for(let n=0;n<620;n++){const x=4+rnd()*392,y=20+rnd()*2990,p=y>2500?.9:y>1800?.55:.4;if(rnd()>p)continue;const b=[x-14,y-30,x+14,y+4];
+ if(RECTS.some(r=>hit(b,r,16))||STRUCT.some(r=>hit(b,r,10))||boxes.some(r=>hit(b,r,4)))continue;boxes.push(b);tree(x,y,.8+rnd()*.55,y>2400&&rnd()>.45)}
+D.sort((a,b)=>a.y-b.y);
+// grass tufts
+const tuft=[];for(let i=0;i<220;i++){const x=rnd()*400,y=rnd()*3600;if(!inR(x,y,-6))tuft.push([x,y,rnd()<.2?['#ffd84d','#fff','#ff9ab8'][i%3]:'rgba(40,110,60,.35)'])}
+
+// ---------- ground ----------
+let grad;
+function ground(vh){
+ if(!grad){grad=ctx.createLinearGradient(0,0,0,WH);[[0,'#a9d79c'],[.45,'#8fcb8c'],[.8,'#62a768'],[1,'#3f8a55']].forEach(s=>grad.addColorStop(s[0],s[1]))}
+ ctx.fillStyle=grad;ctx.fillRect(0,cam-4,WW,vh+8);
+ tuft.forEach(t=>{if(t[1]<cam-8||t[1]>cam+vh+8)return;if(t[2][0]==='r'){ln(t[0],t[1],t[0]-2,t[1]-5,t[2],1.5);ln(t[0],t[1],t[0]+2,t[1]-5,t[2],1.5)}else el(t[0],t[1],2,2,t[2])});
+ RECTS.forEach(r=>{rr(r[0]-5,r[1]-5,r[2]-r[0]+10,r[3]-r[1]+10,8,'#a8926f')});
+ RECTS.forEach((r,i)=>{rr(r[0],r[1],r[2]-r[0],r[3]-r[1],5,ROADCOL[i])});
+ // street bricks & dirt pebbles
+ RECTS.forEach((r,i)=>{const a=Math.max(r[1],cam-10),b=Math.min(r[3],cam+vh+10);if(b<a)return;
+  if(i===0){for(let y=Math.floor(a/9)*9;y<b;y+=9){const k=(y*13)%97;el(r[0]+10+k%150,y,2.5,1.6,'#b8935e')}}
+  else{for(let y=Math.ceil(a/16)*16;y<b;y+=16){ln(r[0],y,r[2],y,'rgba(0,0,0,.07)',1);const off=(y/16)%2?0:12;for(let x=r[0]+off+12;x<r[2];x+=24)ln(x,y,x,y+16,'rgba(0,0,0,.05)',1)}}});
+ // long staircase up to Konch Dyo
+ const sa=Math.max(2080,Math.floor(cam/11)*11),sb=Math.min(2720,cam+vh+11);
+ ctx.globalAlpha=.18;rr(134,2080,24,646,6,'#000');rr(214,2000,20,84,6,'#000');ctx.globalAlpha=1;
+ rr(120,2076,14,650,3,'#8a7d6a');rr(120,2076,14,5,3,'#cfc3ad');rr(200,1996,14,88,3,'#8a7d6a');rr(200,1996,14,5,3,'#cfc3ad');
+ rr(30,2076,90,650,3,'#8f8372');
+ for(let y=sa;y<sb;y+=11){rr(36,y,78,6,2,'#e6dcca');rr(36,y+6,78,5,1,'#a99d89')}
+ rr(30,2076,7,650,2,'#7a6e5c');rr(113,2076,7,650,2,'#7a6e5c');
+ // steps up to Guru Nanak Temple
+ const ga=Math.max(1010,Math.floor(cam/11)*11),gb=Math.min(1300,cam+vh+11);
+ ctx.globalAlpha=.18;rr(262,1000,18,306,6,'#000');ctx.globalAlpha=1;
+ rr(284,1006,82,300,3,'#8f8372');for(let y=ga;y<gb;y+=11){rr(290,y,70,6,2,'#e6dcca');rr(290,y+6,70,5,1,'#a99d89')}
+ rr(284,1006,6,300,2,'#7a6e5c');rr(360,1006,6,300,2,'#7a6e5c');
+}
+
+// ---------- player ----------
+function drawPlayer(){
+ const x=P.x,y=P.y,dir=P.dir,c=P.color,mv=P.moving,sw=mv?Math.sin(P.ph)*5:0,b=mv?Math.abs(Math.sin(P.ph))*1.8:0,side=dir===1||dir===3,f=dir===1?1:-1;
+ const pant='#3c3a5a',skin='#eab48f',hair='#2f2320',shoe='#3a2b26',pack='#8a5a36';
+ el(x,y+1,11,4.5,'rgba(0,0,0,.26)');
+ if(side){rr(x-3+sw,y-15,6,15,3,'#2e2c48');el(x+sw+f*2,y,4.5,2.5,shoe);rr(x-3-sw,y-15,6,15,3,pant);el(x-sw+f*2,y,4.5,2.5,shoe);
+  rr(x-f*13+(f>0?0:-0),y-33-b,6,15,3,pack)}
+ else{const l=-Math.max(0,sw)*.7,r=-Math.max(0,-sw)*.7;rr(x-8,y-15+l,7,15,3,pant);el(x-4.5,y+l,4.2,2.6,shoe);rr(x+1,y-15+r,7,15,3,pant);el(x+4.5,y+r,4.2,2.6,shoe)}
+ // torso
+ const tw=side?14:20;rr(x-tw/2,y-35-b,tw,22,7,c);ctx.fillStyle='rgba(0,0,0,.14)';rr(x-tw/2,y-19-b,tw,6,4,'rgba(0,0,0,.14)');rr(x-tw/2+2,y-34-b,tw-4,5,3,'rgba(255,255,255,.22)');
+ if(dir===0)rr(x-9,y-33-b,18,18,6,pack),rr(x-9,y-33-b,18,6,4,'#a06b40');
+ if(dir===2){ln(x-5,y-34-b,x-5,y-16-b,pack,2);ln(x+5,y-34-b,x+5,y-16-b,pack,2);pl([[x-3,y-35-b],[x+3,y-35-b],[x,y-30-b]],skin)}
+ // arms
+ if(side){rr(x-2.5+sw*.9,y-34-b,5,15,2.5,c);el(x+sw*.9,y-18-b,2.7,2.7,skin)}
+ else{rr(x-14,y-34-b-sw*.5,5,15,2.5,c);el(x-11.5,y-18-b-sw*.5,2.7,2.7,skin);rr(x+9,y-34-b+sw*.5,5,15,2.5,c);el(x+11.5,y-18-b+sw*.5,2.7,2.7,skin)}
+ // head
+ const hy=y-45-b;el(x,hy,9.5,9.5,skin);
+ if(dir===0)el(x,hy-.5,10,10,hair);
+ else if(dir===2){ctx.fillStyle=hair;ctx.beginPath();ctx.arc(x,hy,10,Math.PI,0);ctx.fill();el(x-4,hy-5,6,3.5,hair);el(x+4,hy-6,5,3,hair);
+  el(x-3.7,hy+1.5,1.5,2,'#2a2030');el(x+3.7,hy+1.5,1.5,2,'#2a2030');el(x-6,hy+4,2.2,1.5,'rgba(255,120,120,.4)');el(x+6,hy+4,2.2,1.5,'rgba(255,120,120,.4)');
+  ctx.strokeStyle='#8a4a3a';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(x,hy+4,2.4,.2,Math.PI-.2);ctx.stroke()}
+ else{ctx.fillStyle=hair;ctx.beginPath();ctx.arc(x,hy,10,Math.PI,0);ctx.fill();el(x-f*4,hy-.5,7,8.5,hair);el(x+f*4.8,hy+1.5,1.5,2,'#2a2030');el(x+f*5.5,hy+4.5,2,1.4,'rgba(255,120,120,.4)')}
+ lbl(x,y-68-b,P.name,10);
+}
+function drawGuide(){
+ if(freeExplore||wp>=WP.length||modal||!started)return;const w=WP[wp],dx=w[0]-P.x,dy=w[1]-P.y,d=Math.hypot(dx,dy);if(d<55)return;
+ const a=Math.atan2(dy,dx);for(let k=0;k<3;k++){const r=44+k*22+((now/9)%22),al=1-r/110;if(al<=0)continue;
+  ctx.save();ctx.translate(P.x+Math.cos(a)*r,P.y-14+Math.sin(a)*r*.9);ctx.rotate(a);ctx.globalAlpha=Math.min(1,al*1.4);ctx.fillStyle='#ffc247';ctx.strokeStyle='#8a5a1a';ctx.lineWidth=1.3;
+  ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(-6,-8);ctx.lineTo(-2,0);ctx.lineTo(-6,8);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+}
+function drawWalkCursor(){if(!walkTarget)return;const pulse=1+Math.sin(now/130)*.12;ctx.save();ctx.globalAlpha=.9;ctx.strokeStyle='#fff8e8';ctx.lineWidth=2;ctx.beginPath();ctx.arc(walkTarget.x,walkTarget.y,12*pulse,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#f5b73c';ctx.beginPath();ctx.arc(walkTarget.x,walkTarget.y,4,0,Math.PI*2);ctx.fill();ctx.restore()}
+
+// ---------- loop ----------
+function render(t){
+ now=t;const d=Math.min(devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;
+ if(cv.width!==Math.round(w*d)||cv.height!==Math.round(h*d)){cv.width=Math.round(w*d);cv.height=Math.round(h*d)}
+ const sc=w/WW,vh=h/sc;let ty=Math.max(0,Math.min(WH-vh,P.y-vh*.6));cam+=(ty-cam)*(cam===WH?1:.14);
+ ctx.setTransform(d*sc,0,0,d*sc,0,-cam*d*sc);ctx.clearRect(0,cam,WW,vh);
+ ground(vh);let pd=false;
+ for(const o of D){if(!pd&&o.y>P.y){drawPlayer();pd=true}if(o.y<cam-30||o.y-320>cam+vh)continue;o.f()}
+ if(!pd)drawPlayer();drawGuide();drawWalkCursor();
+ ctx.globalAlpha=.1;ctx.fillStyle='#fff7d6';ctx.fillRect(0,cam,WW,vh);ctx.globalAlpha=1;
+}
+function update(dt){
+ if(!started||modal)return;let dx=0,dy=0;
+ if(keys.ArrowLeft||keys.a)dx--;if(keys.ArrowRight||keys.d)dx++;if(keys.ArrowUp||keys.w)dy--;if(keys.ArrowDown||keys.s)dy++;
+ if(Math.hypot(jv.x,jv.y)>.18){dx+=jv.x;dy+=jv.y}
+ if(Math.hypot(dx,dy)>.05){walkPath=[];walkTarget=null}
+ else if(walkPath.length){const q=walkPath[0],qx=q.x-P.x,qy=q.y-P.y,qd=Math.hypot(qx,qy);if(qd<9){walkPath.shift();if(!walkPath.length)walkTarget=null}else{dx=qx/qd;dy=qy/qd}}
+ const l=Math.hypot(dx,dy);P.moving=l>.05;
+ if(P.moving){const m=Math.min(1,l),st=(P.x<122&&P.y>2080&&P.y<2720)||(P.x>283&&P.y>1010&&P.y<1300);dx/=l;dy/=l;const sp=125*m*(st?.72:1)*dt/1000,nx=P.x+dx*sp,ny=P.y+dy*sp;
+  if(inR(nx,P.y,7))P.x=nx;if(inR(P.x,ny,0))P.y=ny;
+  P.dir=Math.abs(dx)>Math.abs(dy)*1.1?(dx>0?1:3):(dy>0?2:0);P.ph+=dt*.0125*m*(st?1.15:1)}
+ if(wp<WP.length&&Math.hypot(WP[wp][0]-P.x,WP[wp][1]-P.y)<38)wp++;
+ if(freeExplore){if(lastVisited>=0&&Math.hypot(sites[lastVisited].x-P.x,sites[lastVisited].y-P.y)>78)lastVisited=-1;const i=sites.findIndex((s,n)=>n!==2&&n!==lastVisited&&Math.hypot(s.x-P.x,s.y-P.y)<42);if(i>=0)openSite(i)}
+ else if(active<sites.length){const s=sites[active];if(Math.hypot(s.x-P.x,s.y-P.y)<42)openSite(active)}
+ hud();
+}
+function loop(t){if(t-lastFrame<24){requestAnimationFrame(loop);return}const dt=lastFrame?Math.min(100,t-lastFrame):16;lastFrame=t;update(dt);render(t);requestAnimationFrame(loop)}
+
+// ---------- UI ----------
+function hud(){
+ $('area').textContent=P.y>2720?'SIDDHI GANESH TEMPLE':(P.x<125&&P.y>1990&&P.y<2720)?'KONCH DYO STAIRS':P.y>1300?'STREET TO MHEPI AJIMA':P.y>880?'GURU NANAK ASCENT':'PATH TO 22 DHARA';
+ $('obj').textContent=freeExplore?'Free exploration':active<sites.length?MSG[active]:'All stories discovered!';
+ const h=sites.map((_,i)=>i===2?'':`<i class="${done.has(i)?'d':i===active?'c':''}"></i>`).join('');if($('dots').dataset.h!==h){$('dots').innerHTML=h;$('dots').dataset.h=h}
+}
+function toast(m){const e=$('toast');e.textContent=m;e.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>e.style.opacity=0,2800)}
+function nextStoryIndex(){const i=sites.findIndex((_,n)=>n!==2&&!done.has(n));return i<0?sites.length:i}
+function allStoriesDiscovered(){return [0,1,3,4,5,6].every(i=>done.has(i))}
+function openSite(i){if(modal||i===2)return;modal=true;walkPath=[];walkTarget=null;Object.keys(keys).forEach(k=>keys[k]=false);jv={x:0,y:0};$('knob').style.transform='';const s=sites[i];lastVisited=i;done.add(i);window.parent.postMessage({type:'tarka-game-discovery',index:i},'*');active=nextStoryIndex();
+ const mapIds={0:'siddhi',1:'siddhi',3:'mhepi',4:'nanak',5:'balaju',6:'balaju'};$('sArt').textContent=s.e;$('sCount').textContent=`${i===2?'CHECKPOINT':`STORY ${[0,1,3,4,5,6].indexOf(i)+1} OF 6`}`;$('sTitle').textContent=s.n;$('sDesc').textContent=s.desc;$('sFact').textContent=s.fact;$('sMap').dataset.destination=mapIds[i]||'';$('sMap').style.display=mapIds[i]?'':'none';$('site').hidden=false;hud()}
+window.addEventListener('message',e=>{if(e.data?.type==='tarka-continue'){$('site').hidden=true;modal=false}});
+window.addEventListener('message',e=>{if(e.origin!==location.origin)return;if(e.data?.type==='tarka-mode'){freeExplore=e.data.mode==='free';hud()}if(e.data?.type==='tarka-key'){const key=e.data.key.length===1?e.data.key.toLowerCase():e.data.key;keys[key]=e.data.down}});
+window.addEventListener('message',e=>{if(e.data?.type==='tarka-open-map'){window.parent.postMessage({type:'tarka-open-map',destination:$('sMap').dataset.destination},'*')}});
+ $('sMap').addEventListener('click',e=>{e.preventDefault();const id=$('sMap').dataset.destination;if(id)window.parent.postMessage({type:'tarka-open-map',destination:id},'*')});
+$('sGo').onclick=()=>{$('site').hidden=true;modal=false;if(allStoriesDiscovered())$('win').hidden=false;else toast(MSG[active])};
+$('help').onclick=()=>{$('helpM').hidden=false;modal=true};$('helpOk').onclick=()=>{$('helpM').hidden=true;modal=!started||!$('site').hidden};
+$('sw').onclick=e=>{const b=e.target.closest('button');if(!b)return;P.color=b.dataset.c;[...$('sw').children].forEach(x=>x.classList.toggle('on',x===b))};
+$('go').onclick=()=>{P.name=$('nameInput').value.trim()||'Explorer';$('start').hidden=true;started=true;modal=false;$('nameInput').blur();toast('Welcome to Siddhi Ganesh Temple — explore, then go upstairs on the left')};
+function restart(){done.clear();active=0;wp=0;P.x=200;P.y=2845;P.dir=0;$('win').hidden=true;$('site').hidden=true;modal=false;cam=WH;toast('Back at Siddhi Ganesh Temple — begin again!');hud()}
+$('again').onclick=restart;
+
+// controls
+let jv={x:0,y:0},jid=null;const pad=$('pad');
+function jm(e){const r=pad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,m=r.width/2*.75;let dx=e.clientX-cx,dy=e.clientY-cy;const l=Math.hypot(dx,dy);if(l>m){dx*=m/l;dy*=m/l}jv={x:dx/m,y:dy/m};$('knob').style.transform=`translate(${dx}px,${dy}px)`}
+pad.addEventListener('pointerdown',e=>{jid=e.pointerId;pad.setPointerCapture(e.pointerId);jm(e)});
+pad.addEventListener('pointermove',e=>{if(e.pointerId===jid)jm(e)});
+const je=e=>{if(e.pointerId===jid){jid=null;jv={x:0,y:0};$('knob').style.transform=''}};
+pad.addEventListener('pointerup',je);pad.addEventListener('pointercancel',je);
+const dpad=$('dpad');let dpadPointer=null;
+dpad.addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-key]');if(!b)return;e.preventDefault();dpadPointer=e.pointerId;dpad.setPointerCapture(e.pointerId);keys[b.dataset.key]=true;b.dataset.pressed='true'});
+function releaseDpad(e){if(e.pointerId!==dpadPointer)return;dpadPointer=null;dpad.querySelectorAll('[data-pressed]').forEach(b=>{keys[b.dataset.key]=false;delete b.dataset.pressed})}
+dpad.addEventListener('pointerup',releaseDpad);dpad.addEventListener('pointercancel',releaseDpad);dpad.addEventListener('lostpointercapture',releaseDpad);
+cv.addEventListener('pointerdown',e=>{if(e.button!==0||!started||modal)return;const r=cv.getBoundingClientRect(),scale=r.width/WW,x=(e.clientX-r.left)/scale,y=(e.clientY-r.top)/scale+cam;if(!setWalkTarget(x,y))toast('Choose a walkable place closer to a path')});
+window.addEventListener('keydown',e=>{if(document.activeElement===$('nameInput'))return;if(e.key.startsWith('Arrow'))e.preventDefault();keys[e.key.length>1?e.key:e.key.toLowerCase()]=true});
+window.addEventListener('keyup',e=>keys[e.key.length>1?e.key:e.key.toLowerCase()]=false);
+
+hud();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
